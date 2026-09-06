@@ -1,0 +1,35 @@
+name: Update wallpaper archive
+
+on:
+  schedule:
+    - cron: '0 0 */3 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Update bing-wallpaper.md and README.md (no image download)
+        run: python3 bing_wallpaper.py --no-download
+
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          if git diff --quiet -- bing-wallpaper.md README.md; then
+            echo "No changes to commit."
+          else
+            git add bing-wallpaper.md README.md
+            git commit -m "Update bing-wallpaper.md & README.md"
+            git push
+          fi
