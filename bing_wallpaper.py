@@ -7,6 +7,7 @@ Run manually whenever you want a fresh wallpaper — there is no scheduled job.
 import argparse
 import json
 import re
+import subprocess
 import urllib.request
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -181,8 +182,15 @@ def backfill(days: int) -> None:
     """Download every archived image from the last `days` days into wallpapers/.
 
     Bing's live API only exposes ~8 days of history, so this reads the URLs
-    already recorded in bing-wallpaper.md instead of hitting the API.
+    already recorded in bing-wallpaper.md instead of hitting the API. It
+    runs `git pull` first so records committed from another machine are
+    included.
     """
+    print("Pulling latest records...")
+    try:
+        subprocess.run(["git", "pull"], check=True)
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"⚠️ git pull failed ({e}); continuing with local records.")
     recent = filter_recent(read_wallpaper_list(), days)
     print(f"Backfilling {len(recent)} wallpaper(s) from the last {days} days...")
     for img in recent:

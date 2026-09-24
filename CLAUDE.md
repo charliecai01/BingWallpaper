@@ -25,7 +25,7 @@ Everything lives in `bing_wallpaper.py`, run top-to-bottom from `main()`:
 3. The new entries are prepended to the list and `write_wallpaper_list()` rewrites `bing-wallpaper.md` in full every run, deduping — **this file keeps unbounded full history**, never trimmed.
 4. Separately, `filter_recent()` trims the list to the last `RETENTION_DAYS` (30) and `write_readme()` rewrites `README.md` from that filtered list — the README is a rolling window, not history.
 5. `download_wallpaper()` saves each newly-fetched image into `wallpapers/<date>.jpg` (skipping ones already on disk), then `prune_wallpaper_dir()` deletes any file in `wallpapers/` older than 30 days, keyed off the filename's date.
-6. `--backfill` skips the API fetch entirely and instead downloads every image already recorded in `bing-wallpaper.md` from the last `RETENTION_DAYS` days into `wallpapers/` — useful for populating the cache from history (e.g. first-time setup) since the live API can't reach back that far itself.
+6. `--backfill` first runs `git pull` (a failure only warns and continues with local records), then skips the API fetch entirely and instead downloads every image already recorded in `bing-wallpaper.md` from the last `RETENTION_DAYS` days into `wallpapers/` — useful for populating the cache from history (e.g. first-time setup) since the live API can't reach back that far itself.
 
 `Image` (a frozen dataclass: `date`, `desc`, `url`) has three different string renderings, one per consumer above: `markdown()` for `bing-wallpaper.md` rows, `table_cell()` for the README's 3-column table cells (thumbnail + a "download 4k" link), and `large_url()` for the README's hero image at the top.
 
