@@ -6,13 +6,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A single Python script (stdlib only, no dependencies) that fetches Bing's daily "picture of the day" and maintains a local archive: a full-history markdown log (`bing-wallpaper.md`), a rolling 30-day gallery in `README.md`, and a rolling 30-day cache of the actual full-resolution (3840x2160) JPEGs in `wallpapers/`.
 
-It runs **only on manual command** — there is no CI cron job or auto-commit. Run it whenever you want a fresh wallpaper pulled and the archives updated, then commit/push yourself.
+Fetching new wallpapers runs **only on manual command** — there is no CI cron job or auto-commit. Run it whenever you want a fresh wallpaper pulled and the archives updated, then commit/push yourself. The one automated piece is a local launchd job (`auto_backfill.sh`) that runs `--backfill` every 3 days; it only pulls and caches already-recorded images, never fetches from Bing or commits.
 
 ## Commands
 
 ```bash
 python3 bing_wallpaper.py
+python3 bing_wallpaper.py --backfill   # git pull, then cache the last 30 days of recorded images
+./auto_backfill.sh install|uninstall|status|run
 ```
+
+`auto_backfill.sh install` writes a LaunchAgent (`~/Library/LaunchAgents/com.charliecai.bingwallpaper.backfill.plist`) that fires daily at 10:00 and at login; the `run` step skips unless `.last_backfill` (gitignored timestamp file) is ≥3 days old. A plain 3-day `StartInterval` is avoided on purpose — reboots reset it. The plist embeds the repo's absolute path and the resolved `python3`, so re-run `install` after moving the repo. The repo must live outside TCC-protected folders (`~/Documents`, `~/Desktop`, `~/Downloads`) — launchd jobs there fail with "Operation not permitted". Log: `~/Library/Logs/bing-wallpaper-backfill.log`.
 
 Requires Python 3.10+ (uses `list[Image]` type hints and `dataclass`). No install step, no tests or linters configured.
 

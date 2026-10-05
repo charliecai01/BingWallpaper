@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Fetch Bing's picture of the day and update the local archive.
 
-Run manually whenever you want a fresh wallpaper — there is no scheduled job.
+Run manually whenever you want a fresh wallpaper — fetching is never scheduled.
+Only --backfill runs automatically, every 3 days via auto_backfill.sh.
 """
 
 import argparse
