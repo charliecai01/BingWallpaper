@@ -1,5 +1,21 @@
 ## Bing Wallpaper
 
+2026-10-10 | [View of the Sanguinaires Islands from Corsica, France (© Francesco Riccardo Iacomino/Getty Images)](https://cn.bing.com/th?id=OHR.IlesSanguinaires_ROW8228238206_UHD.jpg)
+
+2026-10-09 | [Octopus in defensive posture, Mayotte, Indian Ocean (© Gabriel Barathieu/Minden Pictures)](https://cn.bing.com/th?id=OHR.MayotteOctopus_ROW7337263277_UHD.jpg)
+
+2026-10-08 | [Moss-covered rocks in Puzzlewood, Forest of Dean, Gloucestershire, England (© Fulcanelli_AOS/Getty Images)](https://cn.bing.com/th?id=OHR.ForestofDean_ROW6726223892_UHD.jpg)
+
+2026-10-07 | [Danxia landform, Zhangye National Geopark, Gansu, China (© Weiquan Lin/Getty Images)](https://cn.bing.com/th?id=OHR.DanxiaLandform_ROW6165298580_UHD.jpg)
+
+2026-10-06 | [Adélie penguins, Antarctica (© Otto Plantema/Minden Pictures)](https://cn.bing.com/th?id=OHR.AdelieTeacher_ROW3833533139_UHD.jpg)
+
+2026-10-05 | [Château de Castelnaud overlooking the river Dordogne, France (© garethkirklandphotogrphy/Getty Images)](https://cn.bing.com/th?id=OHR.CastelnaudPatrimoine_ROW3072375181_UHD.jpg)
+
+2026-10-04 | [Brown bear in Silver Salmon Creek, Lake Clark National Park and Preserve, Alaska, United States (© Danny Green/Nature Picture Library)](https://cn.bing.com/th?id=OHR.GrizzlySwim_ROW2767752337_UHD.jpg)
+
+2026-10-03 | [Chattooga River in the Appalachian Mountains, North Carolina, United States (© mtilghma/Getty Images)](https://cn.bing.com/th?id=OHR.ChattoogaRiver_ROW2393025936_UHD.jpg)
+
 2026-10-07 | [Danxia landform, Zhangye National Geopark, Gansu, China (© Weiquan Lin/Getty Images)](https://cn.bing.com/th?id=OHR.DanxiaLandform_EN-US5459628079_UHD.jpg)
 
 2026-10-06 | [Adélie penguins, Antarctica (© Otto Plantema/Minden Pictures)](https://cn.bing.com/th?id=OHR.AdelieTeacher_EN-US5343194378_UHD.jpg)
