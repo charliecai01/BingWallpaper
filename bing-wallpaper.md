@@ -40,22 +40,6 @@
 
 2026-10-06 | [Adélie penguins, Antarctica (© Otto Plantema/Minden Pictures)](https://cn.bing.com/th?id=OHR.AdelieTeacher_EN-US5343194378_UHD.jpg)
 
-2026-10-10 | [View of the Sanguinaires Islands from Corsica, France (© Francesco Riccardo Iacomino/Getty Images)](https://cn.bing.com/th?id=OHR.IlesSanguinaires_ROW8228238206_UHD.jpg)
-
-2026-10-09 | [Octopus in defensive posture, Mayotte, Indian Ocean (© Gabriel Barathieu/Minden Pictures)](https://cn.bing.com/th?id=OHR.MayotteOctopus_ROW7337263277_UHD.jpg)
-
-2026-10-08 | [Moss-covered rocks in Puzzlewood, Forest of Dean, Gloucestershire, England (© Fulcanelli_AOS/Getty Images)](https://cn.bing.com/th?id=OHR.ForestofDean_ROW6726223892_UHD.jpg)
-
-2026-10-07 | [Danxia landform, Zhangye National Geopark, Gansu, China (© Weiquan Lin/Getty Images)](https://cn.bing.com/th?id=OHR.DanxiaLandform_ROW6165298580_UHD.jpg)
-
-2026-10-06 | [Adélie penguins, Antarctica (© Otto Plantema/Minden Pictures)](https://cn.bing.com/th?id=OHR.AdelieTeacher_ROW3833533139_UHD.jpg)
-
-2026-10-05 | [Château de Castelnaud overlooking the river Dordogne, France (© garethkirklandphotogrphy/Getty Images)](https://cn.bing.com/th?id=OHR.CastelnaudPatrimoine_ROW3072375181_UHD.jpg)
-
-2026-10-04 | [Brown bear in Silver Salmon Creek, Lake Clark National Park and Preserve, Alaska, United States (© Danny Green/Nature Picture Library)](https://cn.bing.com/th?id=OHR.GrizzlySwim_ROW2767752337_UHD.jpg)
-
-2026-10-03 | [Chattooga River in the Appalachian Mountains, North Carolina, United States (© mtilghma/Getty Images)](https://cn.bing.com/th?id=OHR.ChattoogaRiver_ROW2393025936_UHD.jpg)
-
 2026-10-05 | [Artemis I moon rocket at Launch Complex 39B, Kennedy Space Center, Florida, June 15, 2022 (© EVA MARIE UZCATEGUI/Getty Images)](https://cn.bing.com/th?id=OHR.ArtemisRocket_EN-US5256990037_UHD.jpg)
 
 2026-10-04 | [Brown bear in Silver Salmon Creek, Lake Clark National Park and Preserve, Alaska (© Danny Green/Nature Picture Library)](https://cn.bing.com/th?id=OHR.GrizzlySwim_EN-US5133524829_UHD.jpg)
@@ -1670,8 +1654,6 @@
 
 2024-07-19 | [Coral reef in the Indian Ocean, overseas department of Mayotte, France (© Gabriel Barathieu/Minden Pictures)](https://cn.bing.com/th?id=OHR.MayotteCoral_EN-US4102346691_UHD.jpg)
 
-2024-07-19 | [Coral reef in the Indian Ocean, Mayotte, France (© Gabriel Barathieu/Minden Pictures)](https://cn.bing.com/th?id=OHR.MayotteCoral_EN-US8740739098_UHD.jpg)
-
 2024-07-18 | [Medieval city of Rothenburg ob der Tauber, Germany (© kanuman/Getty Images)](https://cn.bing.com/th?id=OHR.MedievalRothenburg_EN-US8575765997_UHD.jpg)
 
 2024-07-17 | [The Neolithic settlement of Skara Brae, Orkney, Scotland (© Paul Williams - FunkyStock/Getty Images)](https://cn.bing.com/th?id=OHR.AncientOrkney_EN-US8469766447_UHD.jpg)
@@ -1843,8 +1825,6 @@
 2024-04-25 | [White trilliums blooming in Ontario, Canada (© Jun Zhang/Getty Images)](https://cn.bing.com/th?id=OHR.TrilliumOntario_EN-US5180679465_UHD.jpg)
 
 2024-04-24 | [Library of Trinity College Dublin, Ireland (© Vincent Isore/Getty Images)](https://cn.bing.com/th?id=OHR.TrinityDublin_EN-US9065489677_UHD.jpg)
-
-2024-04-24 | [Library of Trinity College Dublin, Ireland (© Lukas Bischoff/Getty Images)](https://cn.bing.com/th?id=OHR.TrinityDublin_EN-US5011442234_UHD.jpg)
 
 2024-04-23 | [Green sea turtle, San Diego, California (© Ralph Pace/Minden Pictures)](https://cn.bing.com/th?id=OHR.EarthDayTurtle_EN-US4769423754_UHD.jpg)
 
@@ -2233,8 +2213,6 @@
 2023-10-14 | [Vieste on the Gargano peninsula, Apulia, Italy (© Pilat666/Getty Images)](https://cn.bing.com/th?id=OHR.ViesteItaly_EN-US0948108910_UHD.jpg)
 
 2023-10-13 | [Old barn and canola field, Palouse region, Washington (© Terry Eggers/Getty Images)](https://cn.bing.com/th?id=OHR.IdahoBarn_EN-US0098074838_UHD.jpg)
-
-2023-10-13 | [Old barn and canola field, Palouse region, Idaho (© Terry Eggers/Getty Images)](https://cn.bing.com/th?id=OHR.IdahoBarn_EN-US0098074838_UHD.jpg)
 
 2023-10-12 | [The Painted Hills in John Day Fossil Beds National Monument, Oregon (© Ben Herndon/Tandem Stills + Motion)](https://cn.bing.com/th?id=OHR.JohnDayFossil_EN-US9957224234_UHD.jpg)
 
@@ -3144,8 +3122,6 @@
 
 2022-07-16 | [The village of Arrone in Umbria, Italy (© Maurizio Rellini/eStock Photo)](https://cn.bing.com/th?id=OHR.Arrone_EN-US2438328393_UHD.jpg)
 
-2022-07-16 | [向日葵上的金翅雀，美国南卡罗来纳州 (© Teresa Kopec/Getty Images)](https://cn.bing.com/th?id=OHR.AmericanGoldfinch_ZH-CN2996912015_UHD.jpg)
-
 2022-07-15 | [Baby lemon sharks swimming among mangroves near Alice Town, Bimini, Bahamas (© Ken Kiefer 2/Getty Images)](https://cn.bing.com/th?id=OHR.BabyLemons_EN-US8232804860_UHD.jpg)
 
 2022-07-14 | [Basalt columns of Giant's Causeway, Northern Ireland (© Olimpio Fantuz/eStock Photo)](https://cn.bing.com/th?id=OHR.BasaltGiants_EN-US8165410401_UHD.jpg)
@@ -3448,8 +3424,6 @@
 
 2022-02-15 | [Heart-shaped island with sandy beach, offshore coral reef, Indian Ocean, Maldives (© Willyam Bradberry/Shutterstock)](https://cn.bing.com/th?id=OHR.MaldivesHeart_EN-US8259467454_UHD.jpg)
 
-2022-02-15 | [Heart-shaped island with sandy beach, offshore coral reef, Indian Ocean, Maldives (© Willyam Bradberry/Shutterstock)](https://cn.bing.com/th?id=OHR.MaldivesHeart_EN-US7219773610_UHD.jpg)
-
 2022-02-14 | [American bison in Yellowstone National Park, Wyoming (© Gerald Corsi/Getty Images)](https://cn.bing.com/th?id=OHR.FaceOff_EN-US7097284176_UHD.jpg)
 
 2022-02-13 | [Darwin's Arch with Darwin Island in background, Galápagos, Ecuador (© miralex/Getty Images)](https://cn.bing.com/th?id=OHR.DarwinsArch_EN-US6875224451_UHD.jpg)
@@ -3457,8 +3431,6 @@
 2022-02-12 | ['Go' by Kehinde Wiley, displayed inside Moynihan Train Hall at New York City's Penn Station (© Spencer Platt/Getty Images)](https://cn.bing.com/th?id=OHR.TriptychGo_EN-US6716244048_UHD.jpg)
 
 2022-02-11 | [The Old City of Bern, Switzerland (© Xantana/Getty Images)](https://cn.bing.com/th?id=OHR.SnowyBern_EN-US4213051884_UHD.jpg)
-
-2022-02-11 | [The Old City of Bern, Switzerland (© Xantana/Getty Images)](https://cn.bing.com/th?id=OHR.SnowyBern_EN-US4094122962_UHD.jpg)
 
 2022-02-10 | [The Ceremony Hall of Icehotel in Jukkasjarvi, Sweden (© Wolfgang Kaehler/LightRocket via Getty Images)](https://cn.bing.com/th?id=OHR.JukkasjarviIcehotel_EN-US2915409149_UHD.jpg)
 
@@ -3641,8 +3613,6 @@
 2021-11-13 | [Beavers Bend Resort Park near Broken Bow, Oklahoma (© Inge Johnsson/Alamy)](https://cn.bing.com/th?id=OHR.BeaversBend_EN-US8963318493_UHD.jpg)
 
 2021-11-12 | [Service members on the amphibious assault ship USS Iwo Jima on New York's Hudson River during Veterans Week, 2016 (© Apple White/Alamy)](https://cn.bing.com/th?id=OHR.Veterans2021_EN-US8913164564_UHD.jpg)
-
-2021-11-12 | [Sailors on the amphibious assault ship USS Iwo Jima on New York's Hudson River during Veterans Week, 2016 (© Apple White/Alamy)](https://cn.bing.com/th?id=OHR.Veterans2021_EN-US8913164564_UHD.jpg)
 
 2021-11-11 | [Cumberland Island National Seashore, Georgia (© Wilsilver77/Getty Images Plus)](https://cn.bing.com/th?id=OHR.CumberlandSeashore_EN-US8862017440_UHD.jpg)
 

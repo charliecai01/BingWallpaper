@@ -5,3 +5,6 @@ wallpapers/
 
 
 .last_backfill
+.shown_wallpapers
+.last_rotate
+.photos_imported
