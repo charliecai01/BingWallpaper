@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Fetch Bing's picture of the day and update the local archive.
 
-Run manually whenever you want a fresh wallpaper — fetching is never scheduled.
-Only --backfill (every 3 days via auto_backfill.sh) and --rotate (at
-midnight and noon via auto_rotate.sh) run automatically.
+The GitHub Action (.github/workflows/update-archive.yml) runs this with
+--no-download every 3 days and commits the text files; run it manually for a
+fresh wallpaper sooner. Locally, --backfill (every 3 days via
+auto_backfill.sh) and --rotate (at midnight and noon via auto_rotate.sh) run
+automatically.
 """
 
 import argparse
@@ -23,8 +25,8 @@ WALLPAPER_DIR = Path("wallpapers")
 # been shown. Local to this machine, like wallpapers/ itself.
 SHOWN_PATH = Path(".shown_wallpapers")
 # 1080x1920 portrait URLs of the last RETENTION_DAYS days, newest first, one
-# per line. The iPhone's "Bing Wallpaper" Shortcut reads it from GitHub, so it
-# only updates once a manual fetch is committed and pushed.
+# per line. The iPhone's "Bing Wallpaper" Shortcut reads it from GitHub, where
+# the GitHub Action refreshes it every 3 days.
 PHONE_LIST_PATH = Path("phone-wallpapers.txt")
 
 # Retention window: wallpapers/ and phone-wallpapers.txt keep the last 90 days.
@@ -166,7 +168,7 @@ def write_readme(images: list[Image]) -> None:
     images = dedupe(images)
     lines = [
         "## Bing Wallpaper\n\n",
-        f"Showing the last {README_DAYS} days. Updated manually via "
+        f"Showing the last {README_DAYS} days. Updated every 3 days by GitHub Actions via "
         "`python3 bing_wallpaper.py` (see [bing-wallpaper.md](bing-wallpaper.md) "
         "for full history). Full 4K (3840x2160) originals are cached locally in "
         "`wallpapers/`.\n\n",

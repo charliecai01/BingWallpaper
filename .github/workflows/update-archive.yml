@@ -19,17 +19,17 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Update bing-wallpaper.md and README.md (no image download)
+      - name: Update bing-wallpaper.md, README.md and phone-wallpapers.txt (no image download)
         run: python3 bing_wallpaper.py --no-download
 
       - name: Commit and push if changed
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          if git diff --quiet -- bing-wallpaper.md README.md; then
+          if git diff --quiet -- bing-wallpaper.md README.md phone-wallpapers.txt; then
             echo "No changes to commit."
           else
-            git add bing-wallpaper.md README.md
-            git commit -m "Update bing-wallpaper.md & README.md"
+            git add bing-wallpaper.md README.md phone-wallpapers.txt
+            git commit -m "Update bing-wallpaper.md, README.md & phone-wallpapers.txt"
             git push
           fi
