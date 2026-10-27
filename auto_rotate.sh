@@ -1,15 +1,15 @@
 #!/bin/bash
-# Run `bing_wallpaper.py --rotate` automatically at midnight via launchd.
+# Run `bing_wallpaper.py --rotate` automatically at midnight and noon via launchd.
 #
 #   ./auto_rotate.sh install    # register the LaunchAgent (rotates once now)
 #   ./auto_rotate.sh uninstall  # remove it
 #   ./auto_rotate.sh status     # show whether it's loaded and the last run
-#   ./auto_rotate.sh run        # what launchd calls; syncs Photos, rotates once a day
+#   ./auto_rotate.sh run        # what launchd calls; rotates once per half-day
 #
-# launchd fires this at 00:00 and at login. If the Mac was asleep at midnight,
-# launchd runs the missed job on wake; if it was off, the login run covers it.
-# The `run` step allows one rotation per calendar day, so logins later that
-# day don't change the wallpaper again.
+# launchd fires this at 00:00, 12:00 and at login. If the Mac was asleep at a
+# trigger, launchd runs the missed job on wake; if it was off, the login run
+# covers it. The `run` step allows one rotation per half-day (00:00-11:59,
+# 12:00-23:59), so later logins in the same half don't change it again.
 
 set -euo pipefail
 
@@ -19,12 +19,17 @@ PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 LOG="$HOME/Library/Logs/bing-wallpaper-rotate.log"
 STAMP="$REPO_DIR/.last_rotate"
 
+# Half-day slot ("YYYY-MM-DD am|pm") of epoch $1, or of now if omitted.
+slot() {
+    local day hour
+    read -r day hour < <(date ${1:+-r "$1"} '+%F %H')
+    if (( 10#$hour < 12 )); then echo "$day am"; else echo "$day pm"; fi
+}
+
 run() {
     cd "$REPO_DIR"
-    # Idempotent and cheap when nothing is new, so it runs on every trigger.
-    python3 bing_wallpaper.py --sync-photos || echo "$(date '+%F %T') photos sync failed"
-    if [[ -f "$STAMP" && "$(date -r "$(stat -f %m "$STAMP")" +%F)" == "$(date +%F)" ]]; then
-        echo "$(date '+%F %T') already rotated today, skipping."
+    if [[ -f "$STAMP" && "$(slot "$(stat -f %m "$STAMP")")" == "$(slot)" ]]; then
+        echo "$(date '+%F %T') already rotated this half-day, skipping."
         return 0
     fi
     echo "$(date '+%F %T') rotating wallpaper"
@@ -55,12 +60,20 @@ install() {
         <string>$(dirname "$python"):/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     </dict>
     <key>StartCalendarInterval</key>
-    <dict>
-        <key>Hour</key>
-        <integer>0</integer>
-        <key>Minute</key>
-        <integer>0</integer>
-    </dict>
+    <array>
+        <dict>
+            <key>Hour</key>
+            <integer>0</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>12</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+    </array>
     <key>RunAtLoad</key>
     <true/>
     <key>StandardOutPath</key>

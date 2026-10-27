@@ -2,15 +2,14 @@
 """Fetch Bing's picture of the day and update the local archive.
 
 Run manually whenever you want a fresh wallpaper — fetching is never scheduled.
-Only --backfill (every 3 days via auto_backfill.sh) and --rotate plus
---sync-photos (nightly at midnight via auto_rotate.sh) run automatically.
+Only --backfill (every 3 days via auto_backfill.sh) and --rotate (at
+midnight and noon via auto_rotate.sh) run automatically.
 """
 
 import argparse
 import json
 import re
 import subprocess
-import tempfile
 import urllib.request
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -19,18 +18,20 @@ from pathlib import Path
 README_PATH = Path("README.md")
 WALLPAPER_LIST_PATH = Path("bing-wallpaper.md")
 WALLPAPER_DIR = Path("wallpapers")
-# Dates (file stems) of every wallpaper --rotate has put on the desktop, so
-# none is shown twice. Local to this machine, like wallpapers/ itself.
+# Dates (file stems) of every wallpaper --rotate has put on the desktop in the
+# current cycle, so none is shown twice. Cleared once every cached image has
+# been shown. Local to this machine, like wallpapers/ itself.
 SHOWN_PATH = Path(".shown_wallpapers")
-# Dates already imported into the Photos album by --sync-photos.
-PHOTOS_IMPORTED_PATH = Path(".photos_imported")
-# Photos album the iPhone's Photo Shuffle wallpaper rotates through, via
-# iCloud Photos.
-PHOTOS_ALBUM = "Bing Wallpaper"
+# 1080x1920 portrait URLs of the last RETENTION_DAYS days, newest first, one
+# per line. The iPhone's "Bing Wallpaper" Shortcut reads it from GitHub, so it
+# only updates once a manual fetch is committed and pushed.
+PHONE_LIST_PATH = Path("phone-wallpapers.txt")
 
-# Retention window: README.md and wallpapers/ only keep the last 30 days.
+# Retention window: wallpapers/ and phone-wallpapers.txt keep the last 90 days.
 # bing-wallpaper.md is untouched by this and keeps the full history.
-RETENTION_DAYS = 30
+RETENTION_DAYS = 90
+# README.md's gallery shows a shorter window than what is stored.
+README_DAYS = 30
 
 # n=8 pulls Bing's entire available history in one request (idx=0 is today).
 # Bing never exposes more than ~8 days back, so fetching all of them every
@@ -59,26 +60,6 @@ function run(argv) {
         if (!ok) throw new Error(err[0].localizedDescription.js);
     }
 }
-"""
-
-# Imports files into a Photos album, creating it if needed. Photos is quit
-# afterwards if it wasn't already open, so the nightly run leaves no window.
-PHOTOS_IMPORT_APPLESCRIPT = """
-on run argv
-    set albumName to item 1 of argv
-    set imageFiles to {}
-    repeat with p in rest of argv
-        set end of imageFiles to POSIX file (contents of p)
-    end repeat
-    set wasRunning to application "Photos" is running
-    tell application "Photos"
-        if not (exists album albumName) then make new album named albumName
-        with timeout of 600 seconds
-            import imageFiles into album albumName skip check duplicates true
-        end timeout
-    end tell
-    if not wasRunning then tell application "Photos" to quit
-end run
 """
 
 USER_AGENT = (
@@ -181,11 +162,11 @@ def write_wallpaper_list(images: list[Image]) -> None:
 
 
 def write_readme(images: list[Image]) -> None:
-    """Write README.md — only the last RETENTION_DAYS days."""
+    """Write README.md — only the last README_DAYS days."""
     images = dedupe(images)
     lines = [
         "## Bing Wallpaper\n\n",
-        f"Showing the last {RETENTION_DAYS} days. Updated manually via "
+        f"Showing the last {README_DAYS} days. Updated manually via "
         "`python3 bing_wallpaper.py` (see [bing-wallpaper.md](bing-wallpaper.md) "
         "for full history). Full 4K (3840x2160) originals are cached locally in "
         "`wallpapers/`.\n\n",
@@ -207,6 +188,12 @@ def write_readme(images: list[Image]) -> None:
         lines.append(row + "\n")
 
     README_PATH.write_text("".join(lines), encoding="utf-8")
+
+
+def write_phone_list(images: list[Image]) -> None:
+    """Write phone-wallpapers.txt — only the last RETENTION_DAYS days."""
+    lines = [img.portrait_url() + "\n" for img in dedupe(images)]
+    PHONE_LIST_PATH.write_text("".join(lines), encoding="utf-8")
 
 
 def download_wallpaper(image: Image) -> None:
@@ -265,60 +252,25 @@ def set_desktop_wallpaper(path: Path) -> None:
 def rotate() -> None:
     """Set the newest never-shown image in wallpapers/ as the desktop picture.
 
-    Shown dates are appended to SHOWN_PATH, so each image is used once. When
-    every cached image has been shown, the current wallpaper is left alone
-    until a manual fetch adds new ones.
+    Shown dates are appended to SHOWN_PATH, so no image repeats until every
+    cached one has been shown; then SHOWN_PATH is cleared and the cycle starts
+    over from the newest.
     """
-    shown = set(SHOWN_PATH.read_text().split()) if SHOWN_PATH.exists() else set()
-    unshown = sorted(
-        (p for p in WALLPAPER_DIR.glob("*.jpg") if p.stem not in shown), reverse=True
-    )
-    if not unshown:
-        print(
-            "⚠️ Every cached wallpaper has been shown; keeping the current one. "
-            "Run `python3 bing_wallpaper.py` to fetch new ones."
-        )
+    cached = sorted(WALLPAPER_DIR.glob("*.jpg"), reverse=True)
+    if not cached:
+        print("⚠️ No cached wallpapers. Run `python3 bing_wallpaper.py --backfill`.")
         return
+    shown = set(SHOWN_PATH.read_text().split()) if SHOWN_PATH.exists() else set()
+    unshown = [p for p in cached if p.stem not in shown]
+    if not unshown:
+        print(f"🔁 All {len(cached)} cached wallpapers shown; starting a new cycle.")
+        SHOWN_PATH.unlink(missing_ok=True)
+        unshown = cached
     pick = unshown[0]
     set_desktop_wallpaper(pick)
     with SHOWN_PATH.open("a") as f:
         f.write(pick.stem + "\n")
     print(f"🖼️ Desktop set to {pick.name} ({len(unshown) - 1} unshown left)")
-
-
-def sync_photos(days: int) -> None:
-    """Import the portrait version of each recent record into PHOTOS_ALBUM.
-
-    Reads bing-wallpaper.md (like --backfill) rather than wallpapers/, since
-    the phone wants the 1080x1920 version. Photos keeps its own copy, so the
-    downloads only live in a temp dir. Photos' AppleScript can't remove
-    items, so the album keeps growing; delete old ones in Photos by hand.
-    """
-    imported = (
-        set(PHOTOS_IMPORTED_PATH.read_text().split())
-        if PHOTOS_IMPORTED_PATH.exists()
-        else set()
-    )
-    pending = [
-        img for img in reversed(filter_recent(read_wallpaper_list(), days))
-        if img.date not in imported
-    ]
-    if not pending:
-        print("Photos album already up to date.")
-        return
-    with tempfile.TemporaryDirectory() as tmp:
-        paths = []
-        for img in pending:
-            path = Path(tmp) / f"{img.date}.jpg"
-            path.write_bytes(http_get(img.portrait_url()))
-            paths.append(str(path))
-        subprocess.run(
-            ["osascript", "-e", PHOTOS_IMPORT_APPLESCRIPT, PHOTOS_ALBUM, *paths],
-            check=True,
-        )
-    with PHOTOS_IMPORTED_PATH.open("a") as f:
-        f.writelines(img.date + "\n" for img in pending)
-    print(f"📱 Imported {len(pending)} portrait wallpaper(s) into Photos album '{PHOTOS_ALBUM}'")
 
 
 def main() -> None:
@@ -335,7 +287,8 @@ def main() -> None:
         "--no-download",
         action="store_true",
         help=(
-            "Update bing-wallpaper.md and README.md from the Bing API as usual, "
+            "Update bing-wallpaper.md, README.md and phone-wallpapers.txt from the "
+            "Bing API as usual, "
             "but skip downloading/pruning wallpapers/ entirely."
         ),
     )
@@ -347,19 +300,7 @@ def main() -> None:
             "picture, without touching the archive or the network."
         ),
     )
-    parser.add_argument(
-        "--sync-photos",
-        action="store_true",
-        help=(
-            f"Import the 1080x1920 portrait version of the last RETENTION_DAYS "
-            f"days into the Photos album '{PHOTOS_ALBUM}' for the iPhone."
-        ),
-    )
     args = parser.parse_args()
-
-    if args.sync_photos:
-        sync_photos(RETENTION_DAYS)
-        return
 
     if args.rotate:
         rotate()
@@ -374,7 +315,8 @@ def main() -> None:
     image_list = new_images + image_list
 
     write_wallpaper_list(image_list)
-    write_readme(filter_recent(image_list, RETENTION_DAYS))
+    write_readme(filter_recent(image_list, README_DAYS))
+    write_phone_list(filter_recent(image_list, RETENTION_DAYS))
 
     if args.no_download:
         return
