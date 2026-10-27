@@ -15,7 +15,7 @@ The iPhone is handled by an iOS Shortcuts personal automation ("Bing Wallpaper",
 ```bash
 python3 bing_wallpaper.py
 python3 bing_wallpaper.py --backfill   # git pull, then cache the last 90 days of recorded images
-python3 bing_wallpaper.py --rotate     # set the newest never-shown cached image as the desktop picture
+python3 bing_wallpaper.py --rotate     # set a random never-shown cached image as the desktop picture
 ./auto_backfill.sh install|uninstall|status|run
 ./auto_rotate.sh install|uninstall|status|run
 ```
@@ -36,7 +36,7 @@ Everything lives in `bing_wallpaper.py`, run top-to-bottom from `main()`:
 4. Separately, `filter_recent()` trims the list to the last `README_DAYS` (30) and `write_readme()` rewrites `README.md` from that filtered list — the README is a rolling window, not history.
 5. `download_wallpaper()` saves each newly-fetched image into `wallpapers/<date>.jpg` (skipping ones already on disk), then `prune_wallpaper_dir()` deletes any file in `wallpapers/` older than 90 days, keyed off the filename's date.
 6. `--backfill` first runs `git pull` (a failure only warns and continues with local records), then skips the API fetch entirely and instead downloads every image already recorded in `bing-wallpaper.md` from the last `RETENTION_DAYS` days into `wallpapers/` — useful for populating the cache from history (e.g. first-time setup) since the live API can't reach back that far itself.
-7. `--rotate` touches neither the archive nor the network: it picks the newest `wallpapers/*.jpg` whose date isn't in `.shown_wallpapers` (gitignored, cleared each cycle), sets it on every screen, and appends the date. When all cached images have been shown it deletes `.shown_wallpapers` and starts a new cycle from the newest, so nothing repeats until everything has been seen. It sets the picture via `NSWorkspace` through `osascript -l JavaScript`'s ObjC bridge rather than `tell application "System Events"`, because the bridge sends no Apple Events and so needs no Automation (TCC) permission under launchd.
+7. `--rotate` touches neither the archive nor the network: it picks a random `wallpapers/*.jpg` whose date isn't in `.shown_wallpapers` (gitignored, cleared each cycle), sets it on every screen, and appends the date. When all cached images have been shown it deletes `.shown_wallpapers` and starts a new cycle (skipping the image currently on screen), so nothing repeats until everything has been seen. It sets the picture via `NSWorkspace` through `osascript -l JavaScript`'s ObjC bridge rather than `tell application "System Events"`, because the bridge sends no Apple Events and so needs no Automation (TCC) permission under launchd.
 8. On every fetch (Action or manual), `write_phone_list()` rewrites `phone-wallpapers.txt` with the `portrait_url()` (Bing's native 1080x1920 shot, `_UHD.jpg` → `_1080x1920.jpg`) of each of the last `RETENTION_DAYS` records, newest first, one per line — the iPhone Shortcut's only input. It replaced an older `--sync-photos` that imported portraits into a Photos album for Photo Shuffle; that cluttered the photo library, since Photos' AppleScript can't delete items.
 
 `Image` (a frozen dataclass: `date`, `desc`, `url`) has four different string renderings, one per consumer above: `markdown()` for `bing-wallpaper.md` rows, `table_cell()` for the README's 3-column table cells (thumbnail + a "download 4k" link), `large_url()` for the README's hero image at the top, and `portrait_url()` for `phone-wallpapers.txt`.

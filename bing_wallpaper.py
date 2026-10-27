@@ -10,6 +10,7 @@ automatically.
 
 import argparse
 import json
+import random
 import re
 import subprocess
 import urllib.request
@@ -252,27 +253,30 @@ def set_desktop_wallpaper(path: Path) -> None:
 
 
 def rotate() -> None:
-    """Set the newest never-shown image in wallpapers/ as the desktop picture.
+    """Set a random never-shown image in wallpapers/ as the desktop picture.
 
     Shown dates are appended to SHOWN_PATH, so no image repeats until every
-    cached one has been shown; then SHOWN_PATH is cleared and the cycle starts
-    over from the newest.
+    cached one has been shown; then SHOWN_PATH is cleared and a new cycle
+    starts, skipping the image currently on the desktop.
     """
-    cached = sorted(WALLPAPER_DIR.glob("*.jpg"), reverse=True)
+    cached = list(WALLPAPER_DIR.glob("*.jpg"))
     if not cached:
         print("⚠️ No cached wallpapers. Run `python3 bing_wallpaper.py --backfill`.")
         return
-    shown = set(SHOWN_PATH.read_text().split()) if SHOWN_PATH.exists() else set()
-    unshown = [p for p in cached if p.stem not in shown]
+    shown_list = SHOWN_PATH.read_text().split() if SHOWN_PATH.exists() else []
+    unshown = [p for p in cached if p.stem not in shown_list]
     if not unshown:
         print(f"🔁 All {len(cached)} cached wallpapers shown; starting a new cycle.")
         SHOWN_PATH.unlink(missing_ok=True)
-        unshown = cached
-    pick = unshown[0]
+        current = shown_list[-1] if shown_list else None
+        shown_list = []
+        unshown = [p for p in cached if p.stem != current] or cached
+    pick = random.choice(unshown)
+    left = sum(p.stem not in shown_list for p in cached) - 1
     set_desktop_wallpaper(pick)
     with SHOWN_PATH.open("a") as f:
         f.write(pick.stem + "\n")
-    print(f"🖼️ Desktop set to {pick.name} ({len(unshown) - 1} unshown left)")
+    print(f"🖼️ Desktop set to {pick.name} ({left} unshown left)")
 
 
 def main() -> None:
@@ -298,7 +302,7 @@ def main() -> None:
         "--rotate",
         action="store_true",
         help=(
-            "Set the newest not-yet-shown image in wallpapers/ as the desktop "
+            "Set a random not-yet-shown image in wallpapers/ as the desktop "
             "picture, without touching the archive or the network."
         ),
     )
