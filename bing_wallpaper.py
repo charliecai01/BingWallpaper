@@ -16,7 +16,7 @@ import subprocess
 import time
 import urllib.request
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 README_PATH = Path("README.md")
@@ -362,34 +362,59 @@ def backfill(days: int) -> None:
     prune_wallpaper_dir(days)
 
 
-def read_store_with_image(path: Path) -> dict:
-    """Return the wallpaper store once WallpaperAgent has saved `path` to it.
+def desktop_entries(store: dict):
+    """Yield every entry in the wallpaper store that can hold a desktop picture.
 
-    NSWorkspace returns before the agent writes the file.
+    Which one NSWorkspace updates depends on the store's current shape: the
+    all-Spaces default while "Show on all Spaces" holds, otherwise the
+    per-Space and per-display entries under Spaces.
+    """
+    yield store.get("SystemDefault", {})
+    yield store.get("AllSpacesAndDisplays", {})
+    yield from store.get("Displays", {}).values()
+    for space in store.get("Spaces", {}).values():
+        yield space.get("Default", {})
+        yield from space.get("Displays", {}).values()
+
+
+def read_store_with_image(path: Path, since: datetime) -> tuple[dict, dict]:
+    """Return the wallpaper store, and the entry holding `path`, once
+    WallpaperAgent has saved `path` to it at or after `since` (naive UTC).
+
+    NSWorkspace returns before the agent writes the file. Checking the time,
+    not just the name, keeps a re-set of the same file from matching the
+    store's previous save.
     """
     deadline = time.monotonic() + WALLPAPER_STORE_TIMEOUT
     while True:
         store = plistlib.loads(WALLPAPER_STORE.read_bytes())
-        choice = store["SystemDefault"]["Desktop"]["Content"]["Choices"][0]
-        if path.name.encode() in choice["Configuration"]:
-            return store
+        for entry in desktop_entries(store):
+            desktop = entry.get("Desktop")
+            if (desktop and desktop["LastSet"] >= since
+                    and path.name.encode() in desktop["Content"]["Choices"][0]["Configuration"]):
+                return store, entry
         if time.monotonic() > deadline:
             raise TimeoutError(f"WallpaperAgent did not save {path.name}")
         time.sleep(0.2)
 
 
-def show_on_all_spaces(path: Path) -> None:
+def show_on_all_spaces(path: Path, since: datetime) -> None:
     """Make the wallpaper NSWorkspace just set apply to every Space and display.
 
-    SystemDefault, which NSWorkspace does update, becomes the all-Spaces entry,
-    and the per-Space and per-display overrides are dropped. The screen saver
-    (Idle) is kept. WallpaperAgent is restarted to load the file; launchd
-    relaunches it.
+    The entry NSWorkspace updated becomes both the system default and the
+    all-Spaces entry, and the per-Space and per-display overrides are
+    dropped. The screen saver (Idle) is kept. WallpaperAgent is restarted to
+    load the file; launchd relaunches it.
     """
-    store = read_store_with_image(path)
-    system = store["SystemDefault"]
-    idle = store["AllSpacesAndDisplays"].get("Idle", system["Idle"])
-    store["AllSpacesAndDisplays"] = {**system, "Idle": idle}
+    store, entry = read_store_with_image(path, since)
+    system = store.setdefault("SystemDefault", {})
+    idle = (store.get("AllSpacesAndDisplays", {}).get("Idle")
+            or system.get("Idle") or entry.get("Idle"))
+    chosen = {"Type": "individual", "Desktop": entry["Desktop"]}
+    if idle:
+        chosen["Idle"] = idle
+    store["SystemDefault"] = {**system, **chosen}
+    store["AllSpacesAndDisplays"] = chosen
     store["Spaces"] = {}
     store["Displays"] = {}
     WALLPAPER_STORE.write_bytes(plistlib.dumps(store, fmt=plistlib.FMT_BINARY))
@@ -397,11 +422,12 @@ def show_on_all_spaces(path: Path) -> None:
 
 
 def set_desktop_wallpaper(path: Path) -> None:
+    since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(seconds=1)
     subprocess.run(
         ["osascript", "-l", "JavaScript", "-e", SET_WALLPAPER_JXA, str(path.resolve())],
         check=True,
     )
-    show_on_all_spaces(path)
+    show_on_all_spaces(path, since)
 
 
 def location(desc: str) -> str:
