@@ -1,15 +1,14 @@
 #!/bin/bash
-# Run `bing_wallpaper.py --backfill` automatically every 3 days via launchd.
+# Run `bing_wallpaper.py --backfill` automatically once a day via launchd.
 #
 #   ./auto_backfill.sh install    # register the LaunchAgent (runs once now)
 #   ./auto_backfill.sh uninstall  # remove it
 #   ./auto_backfill.sh status     # show whether it's loaded and the last run
-#   ./auto_backfill.sh run        # what launchd calls; skips if run < 3 days ago
+#   ./auto_backfill.sh run        # what launchd calls; skips if run < 1 day ago
 #
-# launchd fires this daily (and at login); the `run` step itself enforces the
-# 3-day spacing using a timestamp file. A plain 3-day StartInterval would be
-# reset by every reboot, so on a machine restarted more often than that it
-# would never fire.
+# launchd fires this daily at 10:00 (after the GitHub Action's daily commit)
+# and at login; the `run` step itself enforces the 1-day spacing using a
+# timestamp file, so logging in after the 10:00 run doesn't repeat it.
 
 set -euo pipefail
 
@@ -18,7 +17,7 @@ LABEL="com.charliecai.bingwallpaper.backfill"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 LOG="$HOME/Library/Logs/bing-wallpaper-backfill.log"
 STAMP="$REPO_DIR/.last_backfill"
-INTERVAL_DAYS=3
+INTERVAL_DAYS=1
 
 run() {
     cd "$REPO_DIR"

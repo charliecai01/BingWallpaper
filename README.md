@@ -1,6 +1,6 @@
 ## Bing Wallpaper
 
-Showing the last 30 days. Updated every 3 days by GitHub Actions via `python3 bing_wallpaper.py` (see [bing-wallpaper.md](bing-wallpaper.md) for full history). Full 4K (3840x2160) originals are cached locally in `wallpapers/`.
+Showing the last 30 days. Updated daily by GitHub Actions via `python3 bing_wallpaper.py` (see [bing-wallpaper.md](bing-wallpaper.md) for full history). Full 4K (3840x2160) originals are cached locally in `wallpapers/`.
 
 ![Lake Braies, Fanes‑Sennes‑Braies Nature Park, Dolomites, Italy (© leonid_tit/Getty Images)](https://cn.bing.com/th?id=OHR.AlpineBraies_EN-US6636326357_UHD.jpg&w=960)
 Today: [Lake Braies, Fanes‑Sennes‑Braies Nature Park, Dolomites, Italy (© leonid_tit/Getty Images)](https://cn.bing.com/th?id=OHR.AlpineBraies_EN-US6636326357_UHD.jpg)

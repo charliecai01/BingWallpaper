@@ -2,17 +2,18 @@
 """Fetch Bing's picture of the day and update the local archive.
 
 The GitHub Action (.github/workflows/update-archive.yml) runs this with
---no-download every 3 days and commits the text files; run it manually for a
-fresh wallpaper sooner. Locally, --backfill (every 3 days via
-auto_backfill.sh) and --rotate (at midnight and noon via auto_rotate.sh) run
-automatically.
+--no-download daily and commits the text files; run it manually for a fresh
+wallpaper sooner. Locally, --backfill (daily via auto_backfill.sh) and
+--rotate (at midnight and noon via auto_rotate.sh) run automatically.
 """
 
 import argparse
 import json
+import plistlib
 import random
 import re
 import subprocess
+import time
 import urllib.request
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -25,10 +26,19 @@ WALLPAPER_DIR = Path("wallpapers")
 # current cycle, so none is shown twice. Cleared once every cached image has
 # been shown. Local to this machine, like wallpapers/ itself.
 SHOWN_PATH = Path(".shown_wallpapers")
-# 1080x1920 portrait URLs of the last RETENTION_DAYS days, newest first, one
-# per line. The iPhone's "Bing Wallpaper" Shortcut reads it from GitHub, where
-# the GitHub Action refreshes it every 3 days.
+# 1080x1920 portrait URLs of the last RETENTION_DAYS days, one per line, in a
+# new random order on every write. The iPhone's "Bing Wallpaper" Shortcut reads
+# it from GitHub, where the GitHub Action refreshes it daily, and sets the first
+# URL it hasn't shown yet, so the shuffle is what makes its pick random.
 PHONE_LIST_PATH = Path("phone-wallpapers.txt")
+# --rotate sets a copy of the picked image with its location drawn in the
+# lower-right corner, so the originals in wallpapers/ stay clean. Only the
+# copy currently on the desktop is kept. Each copy is named after its date:
+# WallpaperAgent keys on the file name (see read_store_with_image()).
+CAPTION_DIR = Path(".captioned")
+# Width/height of the built-in display, saved whenever --rotate sees it, so a
+# caption drawn with the lid closed still fits once the lid opens.
+BUILTIN_ASPECT_PATH = Path(".builtin_aspect")
 
 # Retention window: wallpapers/ and phone-wallpapers.txt keep the last 90 days.
 # bing-wallpaper.md is untouched by this and keeps the full history.
@@ -48,9 +58,19 @@ BING_API = (
 )
 BING_URL = "https://cn.bing.com{}"
 
+# macOS's wallpaper settings (undocumented). WallpaperAgent falls back to
+# AllSpacesAndDisplays for any Space or display with no entry of its own, and
+# reads the file when it starts.
+WALLPAPER_STORE = (
+    Path.home() / "Library/Application Support/com.apple.wallpaper/Store/Index.plist"
+)
+WALLPAPER_STORE_TIMEOUT = 10  # seconds to wait for WallpaperAgent to save
+
 # Sets the desktop picture on every screen through NSWorkspace via the JXA
 # ObjC bridge. Unlike `tell application "System Events"`, this sends no Apple
-# Events, so it needs no Automation permission and works from launchd.
+# Events, so it needs no Automation permission and works from launchd. It only
+# covers the current Space, and clears "Show on all Spaces" as a side effect;
+# set_desktop_wallpaper() undoes that.
 SET_WALLPAPER_JXA = """
 ObjC.import('AppKit');
 function run(argv) {
@@ -62,6 +82,102 @@ function run(argv) {
             url, screens.objectAtIndex(i), $({}), err);
         if (!ok) throw new Error(err[0].localizedDescription.js);
     }
+}
+"""
+
+# Draws argv[2] (one line per "\n") right-aligned in small, semi-transparent
+# text, colored from the picture behind it, in the lower-right corner of the
+# JPEG argv[0], writing the result to argv[1]. AppKit through JXA, like
+# SET_WALLPAPER_JXA, so no image library is needed. The picture is first
+# scaled up to cover the largest screen's pixels, so the text is drawn at
+# native resolution and WallpaperAgent never enlarges (and so blurs) it.
+CAPTION_JXA = """
+ObjC.import('AppKit');
+function run(argv) {
+    const [src, dst, text, saved] = argv;
+    const rep = $.NSBitmapImageRep.imageRepWithData($.NSData.dataWithContentsOfFile(src));
+    if (rep.isNil()) throw new Error('cannot read ' + src);
+    const w = rep.pixelsWide, h = rep.pixelsHigh;
+    // Scale to cover the largest screen. The text is placed for the built-in
+    // display, whose width/height argv[3] remembers for when the lid is
+    // closed (with neither, the narrowest screen): the desktop fills each
+    // screen, cropping the image's sides on screens narrower than it, so the
+    // text is inset by that screen's crop. Returns the built-in display's
+    // width/height if it is on, for the caller to save.
+    let scale = 1, aspect = w / h, builtin = null;
+    const screens = $.NSScreen.screens;
+    for (let i = 0; i < screens.count; i++) {
+        const screen = screens.objectAtIndex(i);
+        const f = screen.frame.size, k = screen.backingScaleFactor;
+        scale = Math.max(scale, f.width * k / w, f.height * k / h);
+        aspect = Math.min(aspect, f.width / f.height);
+        if (screen.localizedName.js.startsWith('Built-in')) builtin = f.width / f.height;
+    }
+    const target = builtin !== null ? builtin : parseFloat(saved);
+    if (target > 0) aspect = Math.min(w / h, target);
+    const W = Math.round(w * scale), H = Math.round(h * scale);
+    // The screen shows the full height (it is never wider than the image), so
+    // image pixels map to screen pixels at the same ratio both ways.
+    const cropX = (W - H * aspect) / 2;
+    const out = $.NSBitmapImageRep.alloc.initWithBitmapDataPlanesPixelsWidePixelsHighBitsPerSampleSamplesPerPixelHasAlphaIsPlanarColorSpaceNameBytesPerRowBitsPerPixel(
+        null, W, H, 8, 4, true, false, $.NSDeviceRGBColorSpace, 0, 0);
+    const ctx = $.NSGraphicsContext.graphicsContextWithBitmapImageRep(out);
+    $.NSGraphicsContext.saveGraphicsState;
+    $.NSGraphicsContext.setCurrentContext(ctx);
+    ctx.setImageInterpolation($.NSImageInterpolationHigh);
+    rep.drawInRect($.NSMakeRect(0, 0, W, H));
+    // Lay the lines out bottom-up before choosing a color. Same gap to the
+    // right edge of the screen as from the bottom edge to the last line's
+    // baseline; a line's origin is the bottom of its line box, below the
+    // baseline by the font's descent.
+    const font = $.NSFont.systemFontOfSizeWeight(Math.round(H * 0.011), $.NSFontWeightMedium);
+    const fontOnly = $.NSDictionary.dictionaryWithObjectForKey(font, $.NSFontAttributeName);
+    const margin = H * 0.02;
+    const right = W - cropX - margin;
+    const bottom = Math.round(margin + font.descender);
+    const lines = [];
+    let left = right, y = bottom;
+    for (const line of text.split('\\n').reverse()) {
+        const str = $.NSString.stringWithString(line);
+        const size = str.sizeWithAttributes(fontOnly);
+        const x = Math.round(right - size.width);
+        lines.push([str, x, y]);
+        left = Math.min(left, x);
+        y += Math.round(size.height);
+    }
+    // Like the iOS lock-screen clock, take the color from what's behind the
+    // text: a deep shade of it on a light background, a pale tint of it on a
+    // dark one. Averages a grid of source pixels (rows count from the top).
+    const srgb = $.NSColorSpace.sRGBColorSpace;
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let i = 0; i < 32; i++) {
+        for (let j = 0; j < 8; j++) {
+            const px = Math.floor((left + (right - left) * (i + 0.5) / 32) / scale);
+            const py = Math.floor(h - (bottom + (y - bottom) * (j + 0.5) / 8) / scale);
+            const c = rep.colorAtXY(px, py).colorUsingColorSpace(srgb);
+            r += c.redComponent; g += c.greenComponent; b += c.blueComponent; n++;
+        }
+    }
+    const bg = $.NSColor.colorWithSRGBRedGreenBlueAlpha(r / n, g / n, b / n, 1);
+    const light = (0.2126 * r + 0.7152 * g + 0.0722 * b) / n > 0.55;
+    const hue = bg.hueComponent, sat = bg.saturationComponent;
+    const color = light
+        ? $.NSColor.colorWithHueSaturationBrightnessAlpha(hue, Math.min(0.7, sat * 1.5), 0.3, 0.8)
+        : $.NSColor.colorWithHueSaturationBrightnessAlpha(hue, sat * 0.25, 1, 0.8);
+    // A 1-pixel unblurred shadow in the opposite tone keeps the edges crisp.
+    const shadow = $.NSShadow.alloc.init;
+    shadow.shadowColor = $.NSColor.colorWithWhiteAlpha(light ? 1 : 0, light ? 0.25 : 0.45);
+    shadow.shadowBlurRadius = 1;
+    shadow.shadowOffset = $.NSMakeSize(0, -1);
+    const attrs = $.NSDictionary.dictionaryWithObjectsForKeys(
+        $([font, color, shadow]),
+        $([$.NSFontAttributeName, $.NSForegroundColorAttributeName, $.NSShadowAttributeName]));
+    for (const [str, x, ly] of lines) str.drawAtPointWithAttributes($.NSMakePoint(x, ly), attrs);
+    $.NSGraphicsContext.restoreGraphicsState;
+    const jpeg = out.representationUsingTypeProperties(
+        $.NSBitmapImageFileTypeJPEG, $({NSImageCompressionFactor: 0.98}));
+    if (!jpeg.writeToFileAtomically(dst, true)) throw new Error('cannot write ' + dst);
+    return builtin === null ? '' : String(builtin);
 }
 """
 
@@ -169,7 +285,7 @@ def write_readme(images: list[Image]) -> None:
     images = dedupe(images)
     lines = [
         "## Bing Wallpaper\n\n",
-        f"Showing the last {README_DAYS} days. Updated every 3 days by GitHub Actions via "
+        f"Showing the last {README_DAYS} days. Updated daily by GitHub Actions via "
         "`python3 bing_wallpaper.py` (see [bing-wallpaper.md](bing-wallpaper.md) "
         "for full history). Full 4K (3840x2160) originals are cached locally in "
         "`wallpapers/`.\n\n",
@@ -194,8 +310,9 @@ def write_readme(images: list[Image]) -> None:
 
 
 def write_phone_list(images: list[Image]) -> None:
-    """Write phone-wallpapers.txt — only the last RETENTION_DAYS days."""
+    """Write phone-wallpapers.txt, shuffled — only the last RETENTION_DAYS days."""
     lines = [img.portrait_url() + "\n" for img in dedupe(images)]
+    random.shuffle(lines)
     PHONE_LIST_PATH.write_text("".join(lines), encoding="utf-8")
 
 
@@ -245,11 +362,81 @@ def backfill(days: int) -> None:
     prune_wallpaper_dir(days)
 
 
+def read_store_with_image(path: Path) -> dict:
+    """Return the wallpaper store once WallpaperAgent has saved `path` to it.
+
+    NSWorkspace returns before the agent writes the file.
+    """
+    deadline = time.monotonic() + WALLPAPER_STORE_TIMEOUT
+    while True:
+        store = plistlib.loads(WALLPAPER_STORE.read_bytes())
+        choice = store["SystemDefault"]["Desktop"]["Content"]["Choices"][0]
+        if path.name.encode() in choice["Configuration"]:
+            return store
+        if time.monotonic() > deadline:
+            raise TimeoutError(f"WallpaperAgent did not save {path.name}")
+        time.sleep(0.2)
+
+
+def show_on_all_spaces(path: Path) -> None:
+    """Make the wallpaper NSWorkspace just set apply to every Space and display.
+
+    SystemDefault, which NSWorkspace does update, becomes the all-Spaces entry,
+    and the per-Space and per-display overrides are dropped. The screen saver
+    (Idle) is kept. WallpaperAgent is restarted to load the file; launchd
+    relaunches it.
+    """
+    store = read_store_with_image(path)
+    system = store["SystemDefault"]
+    idle = store["AllSpacesAndDisplays"].get("Idle", system["Idle"])
+    store["AllSpacesAndDisplays"] = {**system, "Idle": idle}
+    store["Spaces"] = {}
+    store["Displays"] = {}
+    WALLPAPER_STORE.write_bytes(plistlib.dumps(store, fmt=plistlib.FMT_BINARY))
+    subprocess.run(["killall", "WallpaperAgent"])
+
+
 def set_desktop_wallpaper(path: Path) -> None:
     subprocess.run(
         ["osascript", "-l", "JavaScript", "-e", SET_WALLPAPER_JXA, str(path.resolve())],
         check=True,
     )
+    show_on_all_spaces(path)
+
+
+def location(desc: str) -> str:
+    """Strip the trailing "(© photographer/agency)" credit from a description."""
+    return re.sub(r"\s*\(©[^)]*\)\s*$", "", desc)
+
+
+def captioned_copy(path: Path) -> Path:
+    """Return a copy of `path` with its location in the lower-right corner.
+
+    The location comes from bing-wallpaper.md, broken onto a second line after
+    its first comma. Falls back to `path` itself if the date isn't recorded or
+    drawing fails, so rotation never stops over it.
+    """
+    desc = next((i.desc for i in read_wallpaper_list() if i.date == path.stem), None)
+    if desc is None:
+        print(f"⚠️ No description for {path.stem}; setting it without a caption.")
+        return path
+    CAPTION_DIR.mkdir(exist_ok=True)
+    target = CAPTION_DIR / path.name
+    saved = BUILTIN_ASPECT_PATH.read_text().strip() if BUILTIN_ASPECT_PATH.exists() else ""
+    try:
+        result = subprocess.run(
+            ["osascript", "-l", "JavaScript", "-e", CAPTION_JXA,
+             str(path.resolve()), str(target.resolve()),
+             location(desc).replace(", ", "\n", 1), saved],
+            check=True, capture_output=True, text=True,
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Captioning failed ({e.stderr.strip()}); setting it without a caption.")
+        return path
+    builtin = result.stdout.strip()
+    if builtin and builtin != saved:
+        BUILTIN_ASPECT_PATH.write_text(builtin + "\n")
+    return target
 
 
 def rotate() -> None:
@@ -273,7 +460,11 @@ def rotate() -> None:
         unshown = [p for p in cached if p.stem != current] or cached
     pick = random.choice(unshown)
     left = sum(p.stem not in shown_list for p in cached) - 1
-    set_desktop_wallpaper(pick)
+    shown = captioned_copy(pick)
+    set_desktop_wallpaper(shown)
+    for old in CAPTION_DIR.glob("*.jpg"):
+        if old != shown:
+            old.unlink()
     with SHOWN_PATH.open("a") as f:
         f.write(pick.stem + "\n")
     print(f"🖼️ Desktop set to {pick.name} ({left} unshown left)")

@@ -7,3 +7,6 @@ wallpapers/
 .last_backfill
 .shown_wallpapers
 .last_rotate
+.menubar
+.captioned/
+.builtin_aspect

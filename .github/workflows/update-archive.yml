@@ -2,7 +2,8 @@ name: Update wallpaper archive
 
 on:
   schedule:
-    - cron: '0 0 */3 * *'
+    # Daily at 09:00 UTC, after Bing's en-US picture changes at midnight Pacific.
+    - cron: '0 9 * * *'
   workflow_dispatch:
 
 permissions:
